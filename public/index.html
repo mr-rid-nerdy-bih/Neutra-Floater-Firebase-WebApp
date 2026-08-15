@@ -1,89 +1,208 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neutra Floater — Telemetry Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen p-4 md:p-8">
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.17.1/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.17.1/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.17.1/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+  <!-- Header Section -->
+  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-gray-800">
+    <div>
+      <h1 class="text-3xl font-extrabold text-teal-400 tracking-tight">Neutra Floater</h1>
+      <p class="text-sm text-gray-400 mt-1">Real-time Environmental Water Telemetry Node</p>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+    
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-gray-400">Node Status:</span>
+      <div id="statusBadge" class="px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        CONNECTING...
+      </div>
+    </div>
+  </header>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  <main class="max-w-7xl mx-auto space-y-8">
+    
+    <!-- Stat Cards Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- pH Card -->
+      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
+        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
+          <span>WATER pH</span>
+          <span class="text-teal-400">Ideal: 7.0–7.6</span>
+        </div>
+        <div id="valPH" class="text-3xl md:text-4xl font-mono font-bold text-teal-300">--</div>
+        <p id="phStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
+      </div>
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
-    </script>
-  </body>
+      <!-- Temperature Card -->
+      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
+        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
+          <span>TEMPERATURE</span>
+          <span class="text-amber-400">°C</span>
+        </div>
+        <div id="valTemp" class="text-3xl md:text-4xl font-mono font-bold text-amber-300">--</div>
+        <p id="tempStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
+      </div>
+
+      <!-- Turbidity Card -->
+      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
+        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
+          <span>TURBIDITY</span>
+          <span class="text-blue-400">Voltage</span>
+        </div>
+        <div id="valTurb" class="text-3xl md:text-4xl font-mono font-bold text-blue-300">-- <span class="text-base font-normal">V</span></div>
+        <p id="turbStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
+      </div>
+
+      <!-- Dissolved O2 Card -->
+      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
+        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
+          <span>EST. DISSOLVED O₂</span>
+          <span class="text-emerald-400">mg/L</span>
+        </div>
+        <div id="valDO" class="text-3xl md:text-4xl font-mono font-bold text-emerald-300">--</div>
+        <p id="doStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
+      </div>
+
+    </div>
+
+    <!-- Telemetry Charts -->
+    <div class="grid lg:grid-cols-2 gap-6">
+      
+      <div class="bg-gray-900/80 p-6 rounded-2xl border border-gray-800">
+        <h2 class="text-base font-semibold mb-4 text-gray-200 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
+          pH & Dissolved O₂ Trends
+        </h2>
+        <div class="h-64">
+          <canvas id="phChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-gray-900/80 p-6 rounded-2xl border border-gray-800">
+        <h2 class="text-base font-semibold mb-4 text-gray-200 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          Water Temperature (°C)
+        </h2>
+        <div class="h-64">
+          <canvas id="tempChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Firebase Web SDK Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // ⚠️ REPLACE THIS WITH YOUR ACTUAL FIREBASE WEB APP CONFIG
+    // (Found in Firebase Console > Project Settings > General > Your Apps > SDK setup/configuration)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCsIVCkT6Z2c-LL0vCHFCsYUhBpLeH6Bzo",
+      authDomain: "neutrafloater.firebaseapp.com",
+      projectId: "neutrafloater",
+      storageBucket: "neutrafloater.firebasestorage.app",
+      messagingSenderId: "803201039192",
+      appId: "1:803201039192:web:f854c8e85099566751032d",
+      measurementId: "G-NSB5YEBYGW"
+    };
+
+
+    // Initialize Firebase & Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Common Chart Styling Options
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#9ca3af' } } },
+      scales: {
+        x: { ticks: { color: '#6b7280' }, grid: { color: '#1f2937' } },
+        y: { ticks: { color: '#6b7280' }, grid: { color: '#1f2937' } }
+      }
+    };
+
+    // Initialize Charts
+    const ctxPH = document.getElementById('phChart').getContext('2d');
+    const phChart = new Chart(ctxPH, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'pH', data: [], borderColor: '#2dd4bf', backgroundColor: '#2dd4bf20', fill: true, tension: 0.3 },
+          { label: 'Dissolved O₂ (mg/L)', data: [], borderColor: '#34d399', borderDash: [5, 5], tension: 0.3 }
+        ]
+      },
+      options: chartDefaults
+    });
+
+    const ctxTemp = document.getElementById('tempChart').getContext('2d');
+    const tempChart = new Chart(ctxTemp, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Temp (°C)', data: [], borderColor: '#fbbf24', backgroundColor: '#fbbf2415', fill: true, tension: 0.3 }
+        ]
+      },
+      options: chartDefaults
+    });
+
+    // Real-time Firestore Listener
+    const telemetryRef = collection(db, "telemetry");
+    const q = query(telemetryRef, orderBy("uptime_sec", "desc"), limit(20));
+
+    onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        document.getElementById('phStatusText').innerText = "No data documents found in Firestore yet.";
+        return;
+      }
+
+      const docs = snapshot.docs.map(doc => doc.data()).reverse();
+      const latest = docs[docs.length - 1];
+
+      // Update Numerical Stat Cards
+      document.getElementById('valPH').innerText = latest.pH !== undefined ? latest.pH.toFixed(2) : '--';
+      document.getElementById('valTemp').innerText = latest.temp_C !== undefined ? latest.temp_C.toFixed(1) : '--';
+      document.getElementById('valTurb').innerText = latest.turbidity_V !== undefined ? latest.turbidity_V.toFixed(2) + ' V' : '--';
+      document.getElementById('valDO').innerText = latest.est_dissolved_O2 !== undefined ? latest.est_dissolved_O2.toFixed(2) : '--';
+
+      // Status text updates
+      document.getElementById('phStatusText').innerText = (latest.pH >= 6.8 && latest.pH <= 7.8) ? "Normal pH Range" : "Out of bounds";
+      document.getElementById('tempStatusText').innerText = `Last updated at ${Math.floor(latest.uptime_sec / 60)}m uptime`;
+
+      // Update Node Status Badge
+      const badge = document.getElementById('statusBadge');
+      const isAlert = latest.status && latest.status.includes('ALERT');
+      badge.className = isAlert
+        ? 'px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-red-950 text-red-300 border border-red-800 flex items-center gap-2'
+        : 'px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-2';
+      badge.innerHTML = `<span class="w-2 h-2 rounded-full ${isAlert ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse"></span> ${latest.status || 'SYSTEM_OK'}`;
+
+      // Update Chart Data
+      const labels = docs.map(d => `${Math.floor(d.uptime_sec / 60)}m`);
+      
+      phChart.data.labels = labels;
+      phChart.data.datasets[0].data = docs.map(d => d.pH);
+      phChart.data.datasets[1].data = docs.map(d => d.est_dissolved_O2);
+      phChart.update();
+
+      tempChart.data.labels = labels;
+      tempChart.data.datasets[0].data = docs.map(d => d.temp_C);
+      tempChart.update();
+    });
+  </script>
+</body>
 </html>
