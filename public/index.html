@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neutra Floater — pH Monitor</title>
+  <title>Neutra Floater — Monitor & State Machine</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MQTT.js over WebSockets -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <!-- Inter & JetBrains Mono fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,6 +17,14 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Flowchart Node State Styling */
+    .flow-node { transition: all 0.3s ease; opacity: 0.35; filter: grayscale(80%); }
+    .flow-node.active { opacity: 1; filter: grayscale(0%); transform: scale(1.02); }
+    .flow-node.active rect, .flow-node.active polygon, .flow-node.active rx {
+      stroke: #2dd4bf !important;
+      stroke-width: 2.5px !important;
+    }
   </style>
 </head>
 <body class="min-h-full flex flex-col justify-between">
@@ -22,107 +32,152 @@
   <div>
     <!-- Top Navigation Bar -->
     <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="h-7 w-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-mono text-xs font-bold">
             NF
           </div>
           <span class="text-sm font-semibold tracking-tight text-slate-200">Neutra Floater</span>
-          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v1.1.0</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v1.2.0</span>
         </div>
 
         <div class="flex items-center gap-4">
-          <div id="statusBadge" class="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-slate-800/80 text-slate-400 border border-slate-700/60">
+          <div id="mqttBadge" class="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-slate-800/80 text-slate-400 border border-slate-700/60">
             <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            INITIALIZING
+            HIVEMQ: DISCONNECTED
           </div>
         </div>
       </div>
     </header>
 
     <!-- Main Content Area -->
-    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-      <!-- Section Title -->
+      <!-- Section Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/60 pb-4">
         <div>
-          <h1 class="text-lg font-semibold text-slate-100">pH Telemetry & Regulation</h1>
-          <p class="text-xs text-slate-400">Real-time water pH and calculated dissolved oxygen streamed via ESP32 node.</p>
+          <h1 class="text-lg font-semibold text-slate-100">Live Robot State Machine</h1>
+          <p class="text-xs text-slate-400">Real-time execution path streamed over HiveMQ WebSockets broker.</p>
         </div>
-        <div class="text-xs font-mono text-slate-500 flex items-center gap-2">
-          <span>AUTO-REFRESH:</span>
-          <span class="text-slate-300 font-medium">REALTIME</span>
+        <div class="text-xs font-mono text-slate-400 flex items-center gap-2">
+          <span>CURRENT STATE:</span>
+          <span id="currentStateLabel" class="text-teal-400 font-bold">INITIALIZING</span>
         </div>
       </div>
-      
-      <!-- Metrics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+      <!-- Flowchart Visualizer Card -->
+      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-6 flex flex-col items-center justify-center overflow-x-auto">
         
-        <!-- Metric 1: pH -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700/80 transition-colors">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-400 font-medium tracking-wide">WATER pH</span>
-            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px]">TARGET 7.0–7.6</span>
-          </div>
-          <div class="mt-4 flex items-baseline justify-between">
-            <span id="valPH" class="text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
-            <span id="phBadge" class="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">--</span>
-          </div>
-          <p id="phStatusText" class="text-[11px] text-slate-500 mt-3">Waiting for telemetry input...</p>
-        </div>
+        <svg viewBox="0 0 800 420" class="w-full max-w-3xl h-auto font-sans">
+          <!-- Flow Lines / Connections -->
+          <g stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)">
+            <path d="M 120 50 L 120 85" />
+            <path d="M 120 135 L 120 170" />
+            <path d="M 190 200 L 250 200" />
+            <path d="M 330 230 L 330 265" />
+            <path d="M 330 200 L 420 200" />
+            <path d="M 520 200 L 590 200" />
+            <path d="M 520 200 L 520 280 L 490 280" />
+            <path d="M 660 235 L 660 300 L 630 300" />
+            <path d="M 510 300 L 490 300" />
+            <path d="M 350 300 C 120 300, 120 250, 120 235" />
+          </g>
 
-        <!-- Metric 2: Dissolved Oxygen -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700/80 transition-colors">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-400 font-medium tracking-wide">EST. DISSOLVED O₂</span>
-            <span class="text-slate-500 font-mono text-xs">mg/L</span>
-          </div>
-          <div class="mt-4 flex items-baseline justify-between">
-            <span id="valDO" class="text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
-            <span class="text-xs font-mono text-slate-400">PPM</span>
-          </div>
-          <p id="doStatusText" class="text-[11px] text-slate-500 mt-3">Waiting for telemetry input...</p>
-        </div>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+            </marker>
+          </defs>
+
+          <!-- Node 1: Start -->
+          <g id="node-INIT" class="flow-node active">
+            <rect x="70" y="15" width="100" height="35" rx="17" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="120" y="37" fill="#fecdd3" font-size="12" font-weight="600" text-anchor="middle">Start</text>
+          </g>
+
+          <!-- Node 2: WiFi & Init -->
+          <g id="node-WIFI_INIT" class="flow-node">
+            <rect x="50" y="85" width="140" height="50" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="120" y="107" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">WiFi & Firebase</text>
+            <text x="120" y="122" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Init</text>
+          </g>
+
+          <!-- Node 3: Read pH Sensor -->
+          <g id="node-READ_SENSOR" class="flow-node">
+            <polygon points="50,170 190,170 170,230 30,230" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="110" y="195" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Read pH</text>
+            <text x="110" y="210" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Sensor</text>
+          </g>
+
+          <!-- Node 4: Convert Voltages -->
+          <g id="node-CONVERT_VOLT" class="flow-node">
+            <rect x="250" y="175" width="160" height="50" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="330" y="197" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Convert Voltages to</text>
+            <text x="330" y="212" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">pH Value</text>
+          </g>
+
+          <!-- Node 5: pH Stabilization -->
+          <g id="node-STABILIZE" class="flow-node">
+            <rect x="250" y="265" width="160" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="330" y="292" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">pH Stabilization</text>
+          </g>
+
+          <!-- Node 6: Log pH to Firebase -->
+          <g id="node-LOG_FIREBASE" class="flow-node">
+            <rect x="350" y="275" width="140" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="420" y="302" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Log pH to Firebase</text>
+          </g>
+
+          <!-- Node 7: Decision (> pH 7.5) -->
+          <g id="node-CHECK_TARGET" class="flow-node">
+            <polygon points="470,160 520,200 470,240 420,200" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="470" y="195" fill="#fecdd3" font-size="10" font-weight="500" text-anchor="middle">Above Target</text>
+            <text x="470" y="208" fill="#fecdd3" font-size="10" font-weight="500" text-anchor="middle">(> pH 7.5)</text>
+            <text x="535" y="193" fill="#38bdf8" font-size="10" font-weight="700">Yes</text>
+            <text x="500" y="255" fill="#f43f5e" font-size="10" font-weight="700">No</text>
+          </g>
+
+          <!-- Node 8: F1 Activate Acid Pump -->
+          <g id="node-DOSING_ACID" class="flow-node">
+            <rect x="590" y="165" width="140" height="70" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="660" y="188" fill="#fecdd3" font-size="10" font-weight="600" text-anchor="middle">F1 (Acid Pump ON)</text>
+            <text x="660" y="203" fill="#fecdd3" font-size="10" font-weight="400" text-anchor="middle">pH Down Dosing,</text>
+            <text x="660" y="218" fill="#fecdd3" font-size="10" font-weight="400" text-anchor="middle">Lockout Timer Active</text>
+          </g>
+
+          <!-- Node 9: F3 Pump Off -->
+          <g id="node-PUMP_OFF" class="flow-node">
+            <rect x="350" y="260" width="140" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="420" y="287" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">F3 (Pump OFF)</text>
+          </g>
+
+          <!-- Node 10: Update Pump Status -->
+          <g id="node-UPDATE_STATUS" class="flow-node">
+            <rect x="510" y="280" width="120" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
+            <text x="570" y="307" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Update Status</text>
+          </g>
+        </svg>
 
       </div>
 
-      <!-- Chart Container -->
-      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between pt-2">
-        <div class="flex items-center justify-between my-4">
-          <div class="flex items-center gap-2">
-            <span class="h-2 w-2 rounded-full bg-teal-400"></span>
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">pH & Oxygen History</h2>
-          </div>
-          <span class="text-[11px] font-mono text-slate-500">Last 20 readings</span>
+      <!-- Live Telemetry Summaries -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5">
+          <span class="text-slate-400 font-medium text-xs">LATEST WATER pH</span>
+          <div id="valPH" class="text-3xl font-mono font-bold text-slate-50 mt-2">--</div>
         </div>
-        <div class="h-72 w-full">
-          <canvas id="phChart"></canvas>
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5">
+          <span class="text-slate-400 font-medium text-xs">EST. DISSOLVED O₂</span>
+          <div id="valDO" class="text-3xl font-mono font-bold text-slate-50 mt-2">-- <span class="text-sm font-normal text-slate-400">mg/L</span></div>
         </div>
       </div>
 
     </main>
   </div>
 
-  <!-- Footer -->
-  <footer class="border-t border-slate-800/60 py-4 bg-slate-950">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
-      <div class="flex items-center gap-2">
-        <span>Neutra Floater Dashboard</span>
-        <span>•</span>
-        <span>Connected to Firestore</span>
-      </div>
-      <div class="font-mono text-[11px]">
-        Cluster: us-central1
-      </div>
-    </div>
-  </footer>
-
-  <!-- Firebase Script Integration -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
+  <!-- HiveMQ WebSockets Script -->
+  <script>
+    // ⚠️ REPLACE WITH YOUR HIVEMQ CLOUD WEBSOCKET CREDENTIALS
     const firebaseConfig = {
       apiKey: "AIzaSyCsIVCkT6Z2c-LL0vCHFCsYUhBpLeH6Bzo",
       authDomain: "neutrafloater.firebaseapp.com",
@@ -133,96 +188,43 @@
       measurementId: "G-NSB5YEBYGW"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const chartDefaults = {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          position: 'top',
-          align: 'end',
-          labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, color: '#94a3b8', font: { size: 11, family: 'Inter' } }
-        },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          borderColor: '#334155',
-          borderWidth: 1,
-          titleColor: '#f8fafc',
-          bodyColor: '#cbd5e1',
-          padding: 10,
-          cornerRadius: 8,
-          titleFont: { family: 'JetBrains Mono', size: 11 },
-          bodyFont: { family: 'Inter', size: 12 }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } },
-          grid: { color: '#1e293b', strokeDash: [2, 2] }
-        },
-        y: {
-          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } },
-          grid: { color: '#1e293b' }
-        }
-      }
-    };
-
-    const ctxPH = document.getElementById('phChart').getContext('2d');
-    const phChart = new Chart(ctxPH, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [
-          { label: 'pH', data: [], borderColor: '#2dd4bf', backgroundColor: '#2dd4bf08', borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
-          { label: 'O₂ (mg/L)', data: [], borderColor: '#94a3b8', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, tension: 0.2 }
-        ]
-      },
-      options: chartDefaults
+    // Connect via MQTT over WebSockets
+    const client = mqtt.connect(`wss://${hivemqConfig.host}:${hivemqConfig.port}${hivemqConfig.path}`, {
+      username: hivemqConfig.username,
+      password: hivemqConfig.password,
+      clientId: 'web_dashboard_' + Math.random().toString(16).substr(2, 8)
     });
 
-    // Real-time listener
-    const telemetryRef = collection(db, "telemetry");
-    const q = query(telemetryRef, orderBy("uptime_sec", "desc"), limit(20));
+    const mqttBadge = document.getElementById('mqttBadge');
 
-    onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
-
-      const docs = snapshot.docs.map(doc => doc.data()).reverse();
-      const latest = docs[docs.length - 1];
-
-      // Update Numerical Stat Cards
-      document.getElementById('valPH').innerText = latest.pH !== undefined ? latest.pH.toFixed(2) : '--';
-      document.getElementById('valDO').innerText = latest.est_dissolved_O2 !== undefined ? latest.est_dissolved_O2.toFixed(2) : '--';
-
-      // Status text updates
-      const isPHOk = latest.pH >= 7.0 && latest.pH <= 7.6;
-      const phBadge = document.getElementById('phBadge');
-      phBadge.innerText = isPHOk ? 'Optimal' : 'Out of Bounds';
-      phBadge.className = isPHOk 
-        ? 'text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-        : 'text-xs font-medium px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20';
-
-      document.getElementById('phStatusText').innerText = `Updated at ${Math.floor(latest.uptime_sec / 60)}m uptime`;
-      document.getElementById('doStatusText').innerText = `Calculated via pH relationship`;
-
-      // Status Badge top right
-      const badge = document.getElementById('statusBadge');
-      const isAlert = latest.status && latest.status.includes('ALERT');
-      badge.className = isAlert
-        ? 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20'
-        : 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-      badge.innerHTML = `<span class="h-1.5 w-1.5 rounded-full ${isAlert ? 'bg-red-400 animate-ping' : 'bg-emerald-400'}"></span> ${latest.status || 'ONLINE'}`;
-
-      // Update Chart Data
-      const labels = docs.map(d => `${Math.floor(d.uptime_sec / 60)}m`);
+    client.on('connect', () => {
+      mqttBadge.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span> HIVEMQ: CONNECTED';
       
-      phChart.data.labels = labels;
-      phChart.data.datasets[0].data = docs.map(d => d.pH);
-      phChart.data.datasets[1].data = docs.map(d => d.est_dissolved_O2);
-      phChart.update();
+      // Subscribe to robot state topic
+      client.subscribe(hivemqConfig.topic);
+    });
+
+    client.on('error', (err) => {
+      mqttBadge.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20';
+      mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-red-400"></span> HIVEMQ: ERROR';
+    });
+
+    // State transition handler
+    client.on('message', (topic, message) => {
+      const stateKey = message.toString().trim();
+      document.getElementById('currentStateLabel').innerText = stateKey;
+
+      // Remove active highlight from all nodes
+      document.querySelectorAll('.flow-node').forEach(node => {
+        node.classList.remove('active');
+      });
+
+      // Highlight target state node
+      const targetNode = document.getElementById(`node-${stateKey}`);
+      if (targetNode) {
+        targetNode.classList.add('active');
+      }
     });
   </script>
 </body>

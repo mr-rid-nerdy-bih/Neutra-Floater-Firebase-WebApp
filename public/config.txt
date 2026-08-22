@@ -1,0 +1,9 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyCsIVCkT6Z2c-LL0vCHFCsYUhBpLeH6Bzo",
+  authDomain: "neutrafloater.firebaseapp.com",
+  projectId: "neutrafloater",
+  storageBucket: "neutrafloater.firebasestorage.app",
+  messagingSenderId: "803201039192",
+  appId: "1:803201039192:web:f854c8e85099566751032d",
+  measurementId: "G-NSB5YEBYGW"
+};
