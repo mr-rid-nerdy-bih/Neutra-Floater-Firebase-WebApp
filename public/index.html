@@ -1,113 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950 text-slate-100 antialiased selection:bg-teal-500/30 selection:text-teal-200">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neutra Floater — Telemetry Dashboard</title>
+  <title>Neutra Floater — pH Monitor</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Inter & JetBrains Mono fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans min-h-screen p-4 md:p-8">
+<body class="min-h-full flex flex-col justify-between">
 
-  <!-- Header Section -->
-  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-gray-800">
-    <div>
-      <h1 class="text-3xl font-extrabold text-teal-400 tracking-tight">Neutra Floater</h1>
-      <p class="text-sm text-gray-400 mt-1">Real-time Environmental Water Telemetry Node</p>
-    </div>
-    
-    <div class="flex items-center gap-3">
-      <span class="text-xs text-gray-400">Node Status:</span>
-      <div id="statusBadge" class="px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        CONNECTING...
+  <div>
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-7 w-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-mono text-xs font-bold">
+            NF
+          </div>
+          <span class="text-sm font-semibold tracking-tight text-slate-200">Neutra Floater</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v1.1.0</span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div id="statusBadge" class="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-slate-800/80 text-slate-400 border border-slate-700/60">
+            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+            INITIALIZING
+          </div>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <main class="max-w-7xl mx-auto space-y-8">
-    
-    <!-- Stat Cards Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Main Content Area -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+      <!-- Section Title -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/60 pb-4">
+        <div>
+          <h1 class="text-lg font-semibold text-slate-100">pH Telemetry & Regulation</h1>
+          <p class="text-xs text-slate-400">Real-time water pH and calculated dissolved oxygen streamed via ESP32 node.</p>
+        </div>
+        <div class="text-xs font-mono text-slate-500 flex items-center gap-2">
+          <span>AUTO-REFRESH:</span>
+          <span class="text-slate-300 font-medium">REALTIME</span>
+        </div>
+      </div>
       
-      <!-- pH Card -->
-      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
-        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
-          <span>WATER pH</span>
-          <span class="text-teal-400">Ideal: 7.0–7.6</span>
+      <!-- Metrics Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <!-- Metric 1: pH -->
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700/80 transition-colors">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium tracking-wide">WATER pH</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px]">TARGET 7.0–7.6</span>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <span id="valPH" class="text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
+            <span id="phBadge" class="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">--</span>
+          </div>
+          <p id="phStatusText" class="text-[11px] text-slate-500 mt-3">Waiting for telemetry input...</p>
         </div>
-        <div id="valPH" class="text-3xl md:text-4xl font-mono font-bold text-teal-300">--</div>
-        <p id="phStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
+
+        <!-- Metric 2: Dissolved Oxygen -->
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700/80 transition-colors">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium tracking-wide">EST. DISSOLVED O₂</span>
+            <span class="text-slate-500 font-mono text-xs">mg/L</span>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <span id="valDO" class="text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
+            <span class="text-xs font-mono text-slate-400">PPM</span>
+          </div>
+          <p id="doStatusText" class="text-[11px] text-slate-500 mt-3">Waiting for telemetry input...</p>
+        </div>
+
       </div>
 
-      <!-- Temperature Card -->
-      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
-        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
-          <span>TEMPERATURE</span>
-          <span class="text-amber-400">°C</span>
+      <!-- Chart Container -->
+      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between pt-2">
+        <div class="flex items-center justify-between my-4">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-teal-400"></span>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">pH & Oxygen History</h2>
+          </div>
+          <span class="text-[11px] font-mono text-slate-500">Last 20 readings</span>
         </div>
-        <div id="valTemp" class="text-3xl md:text-4xl font-mono font-bold text-amber-300">--</div>
-        <p id="tempStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
-      </div>
-
-      <!-- Turbidity Card -->
-      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
-        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
-          <span>TURBIDITY</span>
-          <span class="text-blue-400">Voltage</span>
-        </div>
-        <div id="valTurb" class="text-3xl md:text-4xl font-mono font-bold text-blue-300">-- <span class="text-base font-normal">V</span></div>
-        <p id="turbStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
-      </div>
-
-      <!-- Dissolved O2 Card -->
-      <div class="bg-gray-900/80 p-5 rounded-2xl border border-gray-800 backdrop-blur">
-        <div class="flex justify-between items-center text-xs text-gray-400 font-medium mb-2">
-          <span>EST. DISSOLVED O₂</span>
-          <span class="text-emerald-400">mg/L</span>
-        </div>
-        <div id="valDO" class="text-3xl md:text-4xl font-mono font-bold text-emerald-300">--</div>
-        <p id="doStatusText" class="text-xs text-gray-500 mt-2">Waiting for read...</p>
-      </div>
-
-    </div>
-
-    <!-- Telemetry Charts -->
-    <div class="grid lg:grid-cols-2 gap-6">
-      
-      <div class="bg-gray-900/80 p-6 rounded-2xl border border-gray-800">
-        <h2 class="text-base font-semibold mb-4 text-gray-200 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
-          pH & Dissolved O₂ Trends
-        </h2>
-        <div class="h-64">
+        <div class="h-72 w-full">
           <canvas id="phChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-gray-900/80 p-6 rounded-2xl border border-gray-800">
-        <h2 class="text-base font-semibold mb-4 text-gray-200 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-          Water Temperature (°C)
-        </h2>
-        <div class="h-64">
-          <canvas id="tempChart"></canvas>
-        </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/60 py-4 bg-slate-950">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <span>Neutra Floater Dashboard</span>
+        <span>•</span>
+        <span>Connected to Firestore</span>
       </div>
-
+      <div class="font-mono text-[11px]">
+        Cluster: us-central1
+      </div>
     </div>
+  </footer>
 
-  </main>
-
-  <!-- Firebase Web SDK Integration -->
+  <!-- Firebase Script Integration -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // ⚠️ REPLACE THIS WITH YOUR ACTUAL FIREBASE WEB APP CONFIG
-    // (Found in Firebase Console > Project Settings > General > Your Apps > SDK setup/configuration)
+    // ⚠️ REPLACE WITH YOUR FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyCsIVCkT6Z2c-LL0vCHFCsYUhBpLeH6Bzo",
       authDomain: "neutrafloater.firebaseapp.com",
@@ -118,78 +133,88 @@
       measurementId: "G-NSB5YEBYGW"
     };
 
-
-    // Initialize Firebase & Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Common Chart Styling Options
     const chartDefaults = {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#9ca3af' } } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: { boxWidth: 8, boxHeight: 8, usePointStyle: true, color: '#94a3b8', font: { size: 11, family: 'Inter' } }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          borderColor: '#334155',
+          borderWidth: 1,
+          titleColor: '#f8fafc',
+          bodyColor: '#cbd5e1',
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { family: 'JetBrains Mono', size: 11 },
+          bodyFont: { family: 'Inter', size: 12 }
+        }
+      },
       scales: {
-        x: { ticks: { color: '#6b7280' }, grid: { color: '#1f2937' } },
-        y: { ticks: { color: '#6b7280' }, grid: { color: '#1f2937' } }
+        x: {
+          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } },
+          grid: { color: '#1e293b', strokeDash: [2, 2] }
+        },
+        y: {
+          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } },
+          grid: { color: '#1e293b' }
+        }
       }
     };
 
-    // Initialize Charts
     const ctxPH = document.getElementById('phChart').getContext('2d');
     const phChart = new Chart(ctxPH, {
       type: 'line',
       data: {
         labels: [],
         datasets: [
-          { label: 'pH', data: [], borderColor: '#2dd4bf', backgroundColor: '#2dd4bf20', fill: true, tension: 0.3 },
-          { label: 'Dissolved O₂ (mg/L)', data: [], borderColor: '#34d399', borderDash: [5, 5], tension: 0.3 }
+          { label: 'pH', data: [], borderColor: '#2dd4bf', backgroundColor: '#2dd4bf08', borderWidth: 2, fill: true, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
+          { label: 'O₂ (mg/L)', data: [], borderColor: '#94a3b8', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, tension: 0.2 }
         ]
       },
       options: chartDefaults
     });
 
-    const ctxTemp = document.getElementById('tempChart').getContext('2d');
-    const tempChart = new Chart(ctxTemp, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [
-          { label: 'Temp (°C)', data: [], borderColor: '#fbbf24', backgroundColor: '#fbbf2415', fill: true, tension: 0.3 }
-        ]
-      },
-      options: chartDefaults
-    });
-
-    // Real-time Firestore Listener
+    // Real-time listener
     const telemetryRef = collection(db, "telemetry");
     const q = query(telemetryRef, orderBy("uptime_sec", "desc"), limit(20));
 
     onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        document.getElementById('phStatusText').innerText = "No data documents found in Firestore yet.";
-        return;
-      }
+      if (snapshot.empty) return;
 
       const docs = snapshot.docs.map(doc => doc.data()).reverse();
       const latest = docs[docs.length - 1];
 
       // Update Numerical Stat Cards
       document.getElementById('valPH').innerText = latest.pH !== undefined ? latest.pH.toFixed(2) : '--';
-      document.getElementById('valTemp').innerText = latest.temp_C !== undefined ? latest.temp_C.toFixed(1) : '--';
-      document.getElementById('valTurb').innerText = latest.turbidity_V !== undefined ? latest.turbidity_V.toFixed(2) + ' V' : '--';
       document.getElementById('valDO').innerText = latest.est_dissolved_O2 !== undefined ? latest.est_dissolved_O2.toFixed(2) : '--';
 
       // Status text updates
-      document.getElementById('phStatusText').innerText = (latest.pH >= 6.8 && latest.pH <= 7.8) ? "Normal pH Range" : "Out of bounds";
-      document.getElementById('tempStatusText').innerText = `Last updated at ${Math.floor(latest.uptime_sec / 60)}m uptime`;
+      const isPHOk = latest.pH >= 7.0 && latest.pH <= 7.6;
+      const phBadge = document.getElementById('phBadge');
+      phBadge.innerText = isPHOk ? 'Optimal' : 'Out of Bounds';
+      phBadge.className = isPHOk 
+        ? 'text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+        : 'text-xs font-medium px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20';
 
-      // Update Node Status Badge
+      document.getElementById('phStatusText').innerText = `Updated at ${Math.floor(latest.uptime_sec / 60)}m uptime`;
+      document.getElementById('doStatusText').innerText = `Calculated via pH relationship`;
+
+      // Status Badge top right
       const badge = document.getElementById('statusBadge');
       const isAlert = latest.status && latest.status.includes('ALERT');
       badge.className = isAlert
-        ? 'px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-red-950 text-red-300 border border-red-800 flex items-center gap-2'
-        : 'px-3 py-1.5 rounded-full font-mono text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-2';
-      badge.innerHTML = `<span class="w-2 h-2 rounded-full ${isAlert ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse"></span> ${latest.status || 'SYSTEM_OK'}`;
+        ? 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20'
+        : 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      badge.innerHTML = `<span class="h-1.5 w-1.5 rounded-full ${isAlert ? 'bg-red-400 animate-ping' : 'bg-emerald-400'}"></span> ${latest.status || 'ONLINE'}`;
 
       // Update Chart Data
       const labels = docs.map(d => `${Math.floor(d.uptime_sec / 60)}m`);
@@ -198,10 +223,6 @@
       phChart.data.datasets[0].data = docs.map(d => d.pH);
       phChart.data.datasets[1].data = docs.map(d => d.est_dissolved_O2);
       phChart.update();
-
-      tempChart.data.labels = labels;
-      tempChart.data.datasets[0].data = docs.map(d => d.temp_C);
-      tempChart.update();
     });
   </script>
 </body>
