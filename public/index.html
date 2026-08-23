@@ -14,18 +14,50 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
   <style>
     body { font-family: 'Inter', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     
-    /* Dynamic Flowchart Node Styling */
-    .flow-node { transition: all 0.3s ease; opacity: 0.35; filter: grayscale(80%); }
-    .flow-node.active { opacity: 1; filter: grayscale(0%); transform: scale(1.02); transform-origin: center; }
-    .flow-node.active rect, .flow-node.active polygon, .flow-node.active rx {
+    /* Dynamic Mermaid Node Styling */
+    .mermaid .node rect, .mermaid .node polygon, .mermaid .node path {
+      rx: 8px !important;
+      ry: 8px !important;
+      transition: all 0.3s ease !important;
+    }
+
+    /* Active Highlight Glow */
+    .mermaid .active-node rect, 
+    .mermaid .active-node polygon, 
+    .mermaid .active-node path {
       stroke: #2dd4bf !important;
-      stroke-width: 2.5px !important;
+      stroke-width: 3px !important;
+      filter: drop-shadow(0 0 10px rgba(45, 212, 191, 0.9)) !important;
     }
   </style>
+
+  <!-- Load Mermaid with ELK Engine -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs';
+    
+    mermaid.registerLayoutLoaders(elkLayouts);
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      flowchart: { defaultRenderer: 'elk' },
+      themeVariables: {
+        darkMode: true,
+        background: '#0f172a',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#334155',
+        lineColor: '#64748b'
+      }
+    });
+
+    window.mermaid = mermaid;
+  </script>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-slate-950">
 
@@ -56,7 +88,7 @@
       </div>
     </header>
 
-    <!-- Main Content Area: Dynamically Scales Up to Full Viewport/Large Displays -->
+    <!-- Main Content Area -->
     <main class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 py-6 flex-1 flex flex-col space-y-6">
 
       <!-- Section Header -->
@@ -71,108 +103,26 @@
         </div>
       </div>
 
-      <!-- Flowchart Container: Fully Responsive SVG ViewBox -->
+      <!-- Flowchart Container -->
       <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-6 flex flex-col justify-center items-center w-full shadow-lg">
         <div class="w-full flex justify-between items-center mb-2 sm:mb-4">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Robot Execution Logic Flowchart[cite: 1]</h2>
-          <span class="text-[11px] font-mono text-slate-500">HiveMQ MQTT Websockets</span>
+          <div class="flex items-center gap-3">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Robot Execution Logic Flowchart[cite: 1]</h2>
+            <span id="layoutBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">LAYOUT: LR</span>
+          </div>
+          
+          <button onclick="toggleLayout()" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-mono transition">
+            <span>⚡ Swap Layout (<span id="layoutDirText">TB</span>)</span>
+          </button>
         </div>
         
-        <!-- SVG element configured with 100% width, dynamic height, and viewport aspect scaling -->
-        <div class="w-full h-auto flex items-center justify-center">
-          <svg viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet" class="w-full h-auto max-h-[60vh] font-sans">
-            <!-- Flow Connections -->
-            <g stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)">
-              <path d="M 120 50 L 120 85" />
-              <path d="M 120 135 L 120 170" />
-              <path d="M 190 200 L 250 200" />
-              <path d="M 330 230 L 330 265" />
-              <path d="M 330 200 L 420 200" />
-              <path d="M 520 200 L 590 200" />
-              <path d="M 520 200 L 520 280 L 490 280" />
-              <path d="M 660 235 L 660 300 L 630 300" />
-              <path d="M 510 300 L 490 300" />
-              <path d="M 350 300 C 120 300, 120 250, 120 235" />
-            </g>
-
-            <defs>
-              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
-              </marker>
-            </defs>
-
-            <!-- Node: Start -->
-            <g id="node-INIT" class="flow-node active">
-              <rect x="70" y="15" width="100" height="35" rx="17" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="120" y="37" fill="#fecdd3" font-size="12" font-weight="600" text-anchor="middle">Start[cite: 1]</text>
-            </g>
-
-            <!-- Node: Wifi and Firebase Init -->
-            <g id="node-WIFI_INIT" class="flow-node">
-              <rect x="50" y="85" width="140" height="50" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="120" y="107" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Wifi and[cite: 1]</text>
-              <text x="120" y="122" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Firebase Init.[cite: 1]</text>
-            </g>
-
-            <!-- Node: Read pH Sensor -->
-            <g id="node-READ_SENSOR" class="flow-node">
-              <polygon points="50,170 190,170 170,230 30,230" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="110" y="195" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Read pH[cite: 1]</text>
-              <text x="110" y="210" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Sensor[cite: 1]</text>
-            </g>
-
-            <!-- Node: Convert Voltages -->
-            <g id="node-CONVERT_VOLT" class="flow-node">
-              <rect x="250" y="175" width="160" height="50" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="330" y="197" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Convert voltages to[cite: 1]</text>
-              <text x="330" y="212" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">pH value[cite: 1]</text>
-            </g>
-
-            <!-- Node: pH Stabilization -->
-            <g id="node-STABILIZE" class="flow-node">
-              <rect x="250" y="265" width="160" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="330" y="292" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">pH Stabilitization[cite: 1]</text>
-            </g>
-
-            <!-- Node: Log pH to Firebase -->
-            <g id="node-LOG_FIREBASE" class="flow-node">
-              <rect x="350" y="275" width="140" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="420" y="302" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Log pH to Firebase[cite: 1]</text>
-            </g>
-
-            <!-- Node: Above Target pH -->
-            <g id="node-CHECK_TARGET" class="flow-node">
-              <polygon points="470,160 520,200 470,240 420,200" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="470" y="195" fill="#fecdd3" font-size="10" font-weight="500" text-anchor="middle">Above Target pH[cite: 1]</text>
-              <text x="470" y="208" fill="#fecdd3" font-size="10" font-weight="500" text-anchor="middle">(> pH 7.5)[cite: 1]</text>
-              <text x="535" y="193" fill="#38bdf8" font-size="10" font-weight="700">Yes[cite: 1]</text>
-              <text x="500" y="255" fill="#f43f5e" font-size="10" font-weight="700">No[cite: 1]</text>
-            </g>
-
-            <!-- Node: F1 Activate Acid Pump -->
-            <g id="node-DOSING_ACID" class="flow-node">
-              <rect x="590" y="165" width="140" height="70" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="660" y="188" fill="#fecdd3" font-size="10" font-weight="600" text-anchor="middle">F1 (Activate Acid[cite: 1]</text>
-              <text x="660" y="203" fill="#fecdd3" font-size="10" font-weight="400" text-anchor="middle">Pump / pH Down[cite: 1]</text>
-              <text x="660" y="218" fill="#fecdd3" font-size="10" font-weight="400" text-anchor="middle">Dosing...)[cite: 1]</text>
-            </g>
-
-            <!-- Node: F3 Pump Off -->
-            <g id="node-PUMP_OFF" class="flow-node">
-              <rect x="350" y="260" width="140" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="420" y="287" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">F3 (Pump OFF)[cite: 1]</text>
-            </g>
-
-            <!-- Node: Update pump status -->
-            <g id="node-UPDATE_STATUS" class="flow-node">
-              <rect x="510" y="280" width="120" height="45" rx="8" fill="#881337" stroke="#be123c" stroke-width="1.5"/>
-              <text x="570" y="307" fill="#fecdd3" font-size="11" font-weight="500" text-anchor="middle">Update pump status[cite: 1]</text>
-            </g>
-          </svg>
+        <!-- MERMAID CONTAINER -->
+        <div id="mermaidContainer" class="w-full flex items-center justify-center overflow-x-auto min-h-[300px]">
+          <!-- Dynamic SVG renders here -->
         </div>
       </div>
 
-      <!-- Telemetry Cards & Charts (Responsive Grid Layout) -->
+      <!-- Telemetry Cards & Charts -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         <!-- Metric Card 1 -->
@@ -200,7 +150,7 @@
           <p id="doStatusText" class="text-[11px] text-slate-500 mt-3">Calculated via pH sensor</p>
         </div>
 
-        <!-- Chart Card: Responsive Canvas Container -->
+        <!-- Chart Card -->
         <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 md:col-span-1 lg:col-span-1 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
@@ -219,7 +169,7 @@
     </main>
   </div>
 
-  <!-- Responsive Footer -->
+  <!-- Footer -->
   <footer class="border-t border-slate-800/60 py-4 bg-slate-950">
     <div class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
       <div class="flex items-center gap-2">
@@ -231,7 +181,7 @@
     </div>
   </footer>
 
-  <!-- Scripts -->
+  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getFirestore, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -295,7 +245,91 @@
     });
   </script>
 
+  <!-- Flowchart Engine & MQTT Script -->
   <script>
+    let currentDirection = 'LR';
+    let currentActiveNode = 'INIT';
+
+    // State key mapping: Maps state string received over MQTT to Mermaid node ID
+    const stateMap = {
+      'INIT': 'n1',
+      'WIFI_INIT': 'n2',
+      'READ_SENSOR': 'n3',
+      'CONVERT_VOLT': 'n4',
+      'LOG_FIREBASE': 'n5',
+      'STABILIZE': 'n6',
+      'CHECK_TARGET': 'n7',
+      'DOSING_ACID': 'n8',
+      'PUMP_OFF': 'n9',
+      'UPDATE_STATUS': 'n10'
+    };
+
+    function getDiagramDefinition(direction) {
+      return `---
+config:
+  layout: elk
+---
+flowchart ${direction}
+    n1(["Start"]) --> n2["Wi-Fi and Firebase Init."]
+    n2 --> n3["Read pH Sensor"]
+    n3 --> n4["Convert voltages to pH value"]
+    n4 --> n5[("Log pH to Firebase")]
+    n4 --> n6["pH Stabilization"]
+    n6 --> n7{"Above Target pH<br/>(> pH 7.5)?"}
+    n7 -->|Yes| n8["F1: Activate Acid Pump<br/>pH Down Dosing<br/>Lock out for set time"]
+    n7 -->|No| n9["F3: Pump OFF"]
+    n8 --> n10["Update Pump Status"]
+    n9 --> n10
+    n10 -->|Next Cycle| n3
+
+    classDef process fill:#1e293b,stroke:#475569;
+    classDef database fill:#0c4a6e,stroke:#38bdf8;
+    classDef decision fill:#451a03,stroke:#fbbf24;
+
+    class n2,n3,n4,n6,n10 process;
+    class n5 database;
+    class n7 decision;`;
+    }
+
+    async function renderFlowchart() {
+      const container = document.getElementById('mermaidContainer');
+      const diagramText = getDiagramDefinition(currentDirection);
+      const renderId = 'mermaid-svg-' + Math.floor(Math.random() * 10000);
+      
+      try {
+        const { svg } = await window.mermaid.render(renderId, diagramText);
+        container.innerHTML = svg;
+        if (currentActiveNode) applyGlow(currentActiveNode);
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+      }
+    }
+
+    function toggleLayout() {
+      currentDirection = currentDirection === 'LR' ? 'TB' : 'LR';
+      document.getElementById('layoutBadge').innerText = `LAYOUT: ${currentDirection}`;
+      document.getElementById('layoutDirText').innerText = currentDirection === 'LR' ? 'TB' : 'LR';
+      renderFlowchart();
+    }
+
+    function applyGlow(stateKey) {
+      const targetNodeId = stateMap[stateKey] || stateKey; // supports "DOSING_ACID" or "n8"
+      
+      document.querySelectorAll('#mermaidContainer .node').forEach(node => {
+        node.classList.remove('active-node');
+        if (node.id.includes(`-${targetNodeId}-`)) {
+          node.classList.add('active-node');
+        }
+      });
+    }
+
+    function setActiveState(stateKey) {
+      currentActiveNode = stateKey;
+      document.getElementById('currentStateLabel').innerText = stateKey;
+      applyGlow(stateKey);
+    }
+
+    // --- HIVEMQ INTEGRATION ---
     const hivemqConfig = {
       host: "YOUR_HIVEMQ_HOST.s1.eu.hivemq.cloud",
       port: 8884,
@@ -325,17 +359,13 @@
     });
 
     client.on('message', (topic, message) => {
-      const stateKey = message.toString().trim();
-      document.getElementById('currentStateLabel').innerText = stateKey;
+      const stateKey = message.toString().trim(); // e.g. "DOSING_ACID" or "n8"
+      setActiveState(stateKey);
+    });
 
-      document.querySelectorAll('.flow-node').forEach(node => {
-        node.classList.remove('active');
-      });
-
-      const targetNode = document.getElementById(`node-${stateKey}`);
-      if (targetNode) {
-        targetNode.classList.add('active');
-      }
+    // Initial Diagram Render
+    window.addEventListener('load', () => {
+      setTimeout(renderFlowchart, 300);
     });
   </script>
 </body>
