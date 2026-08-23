@@ -19,20 +19,32 @@
     body { font-family: 'Inter', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     
-    /* Dynamic Mermaid Node Styling */
-    .mermaid .node rect, .mermaid .node polygon, .mermaid .node path {
+    /* Dynamic Mermaid Node Base Styling */
+    .mermaid .node rect, 
+    .mermaid .node polygon, 
+    .mermaid .node path, 
+    .mermaid .node circle {
       rx: 8px !important;
       ry: 8px !important;
       transition: all 0.3s ease !important;
     }
 
-    /* Active Highlight Glow */
-    .mermaid .active-node rect, 
-    .mermaid .active-node polygon, 
-    .mermaid .active-node path {
+    /* Target Active Highlight Glow explicitly down to child elements */
+    .mermaid .node.active-node rect, 
+    .mermaid .node.active-node polygon, 
+    .mermaid .node.active-node path, 
+    .mermaid .node.active-node circle {
       stroke: #2dd4bf !important;
-      stroke-width: 3px !important;
-      filter: drop-shadow(0 0 10px rgba(45, 212, 191, 0.9)) !important;
+      stroke-width: 3.5px !important;
+      filter: drop-shadow(0 0 12px rgba(45, 212, 191, 1)) !important;
+    }
+
+    /* Force full fluid scaling on rendered Mermaid SVGs */
+    #mermaidContainer svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 65vh;
+      object-fit: contain;
     }
   </style>
 
@@ -45,7 +57,7 @@
     mermaid.initialize({
       startOnLoad: false,
       theme: 'dark',
-      flowchart: { defaultRenderer: 'elk' },
+      flowchart: { defaultRenderer: 'elk', useMaxWidth: true },
       themeVariables: {
         darkMode: true,
         background: '#0f172a',
@@ -59,7 +71,7 @@
     window.mermaid = mermaid;
   </script>
 </head>
-<body class="min-h-screen flex flex-col justify-between bg-slate-950">
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 overflow-x-hidden">
 
   <div class="w-full flex-1 flex flex-col">
     <!-- Navigation Bar -->
@@ -70,7 +82,7 @@
             NF
           </div>
           <span class="text-sm font-semibold tracking-tight text-slate-200">Neutra Floater</span>
-          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v1.4.0</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono hidden sm:inline-block">v1.4.0</span>
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3">
@@ -89,13 +101,13 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 py-6 flex-1 flex flex-col space-y-6">
+    <main class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6 flex-1 flex flex-col space-y-4 sm:space-y-6">
 
       <!-- Section Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/60 pb-3">
         <div>
           <h1 class="text-base sm:text-lg font-semibold text-slate-100">Live Robot State Machine & Telemetry</h1>
-          <p class="text-xs text-slate-400">Real-time state transitions streamed via HiveMQ[cite: 1]; persistent logging via Firebase.</p>
+          <p class="text-xs text-slate-400">Real-time state transitions streamed via HiveMQ; persistent logging via Firebase.</p>
         </div>
         <div class="text-xs font-mono text-slate-400 flex items-center gap-2">
           <span>ACTIVE STATE:</span>
@@ -104,54 +116,55 @@
       </div>
 
       <!-- Flowchart Container -->
-      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-6 flex flex-col justify-center items-center w-full shadow-lg">
-        <div class="w-full flex justify-between items-center mb-2 sm:mb-4">
-          <div class="flex items-center gap-3">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Robot Execution Logic Flowchart[cite: 1]</h2>
+      <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-3 sm:p-6 flex flex-col justify-center items-center w-full shadow-lg flex-1 min-h-[350px]">
+        <div class="w-full flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Robot Execution Logic Flowchart</h2>
             <span id="layoutBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">LAYOUT: LR</span>
           </div>
-          
-          <button onclick="toggleLayout()" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-mono transition">
+
+          <!-- Layout Swap Button -->
+          <button onclick="toggleLayout()" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-mono transition shrink-0">
             <span>⚡ Swap Layout (<span id="layoutDirText">TB</span>)</span>
           </button>
         </div>
         
         <!-- MERMAID CONTAINER -->
-        <div id="mermaidContainer" class="w-full flex items-center justify-center overflow-x-auto min-h-[300px]">
+        <div id="mermaidContainer" class="w-full h-full flex-1 flex items-center justify-center overflow-hidden mermaid">
           <!-- Dynamic SVG renders here -->
         </div>
       </div>
 
       <!-- Telemetry Cards & Charts -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         
         <!-- Metric Card 1 -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span class="text-slate-400 font-medium tracking-wide">WATER pH</span>
             <span id="phBadge" class="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">--</span>
           </div>
-          <div class="mt-4 flex items-baseline justify-between">
-            <span id="valPH" class="text-3xl lg:text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
+          <div class="mt-3 sm:mt-4 flex items-baseline justify-between">
+            <span id="valPH" class="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
           </div>
-          <p id="phStatusText" class="text-[11px] text-slate-500 mt-3">Firestore live feed</p>
+          <p id="phStatusText" class="text-[11px] text-slate-500 mt-2 sm:mt-3">Firestore live feed</p>
         </div>
 
         <!-- Metric Card 2 -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 flex flex-col justify-between">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span class="text-slate-400 font-medium tracking-wide">EST. DISSOLVED O₂</span>
             <span class="text-slate-500 font-mono text-xs">mg/L</span>
           </div>
-          <div class="mt-4 flex items-baseline justify-between">
-            <span id="valDO" class="text-3xl lg:text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
+          <div class="mt-3 sm:mt-4 flex items-baseline justify-between">
+            <span id="valDO" class="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold tracking-tight text-slate-50">--</span>
             <span class="text-xs font-mono text-slate-400">PPM</span>
           </div>
-          <p id="doStatusText" class="text-[11px] text-slate-500 mt-3">Calculated via pH sensor</p>
+          <p id="doStatusText" class="text-[11px] text-slate-500 mt-2 sm:mt-3">Calculated via pH sensor</p>
         </div>
 
         <!-- Chart Card -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-5 md:col-span-1 lg:col-span-1 flex flex-col justify-between">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 sm:col-span-2 lg:col-span-1 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <span class="h-2 w-2 rounded-full bg-teal-400"></span>
@@ -159,7 +172,7 @@
             </div>
             <span class="text-[11px] font-mono text-slate-500">Firestore</span>
           </div>
-          <div class="h-28 w-full relative">
+          <div class="h-24 sm:h-28 w-full relative">
             <canvas id="phChart"></canvas>
           </div>
         </div>
@@ -170,7 +183,7 @@
   </div>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-800/60 py-4 bg-slate-950">
+  <footer class="border-t border-slate-800/60 py-3 sm:py-4 bg-slate-950">
     <div class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
       <div class="flex items-center gap-2">
         <span>Neutra Floater Dashboard</span>
@@ -247,10 +260,9 @@
 
   <!-- Flowchart Engine & MQTT Script -->
   <script>
-    let currentDirection = 'LR';
     let currentActiveNode = 'INIT';
+    let currentLayout = 'LR';
 
-    // State key mapping: Maps state string received over MQTT to Mermaid node ID
     const stateMap = {
       'INIT': 'n1',
       'WIFI_INIT': 'n2',
@@ -291,41 +303,64 @@ flowchart ${direction}
     class n7 decision;`;
     }
 
+    function applyGlow(stateKey) {
+      if (!stateKey) return;
+      const targetNodeId = stateMap[stateKey] || stateKey;
+      
+      const nodes = document.querySelectorAll('#mermaidContainer .node');
+      nodes.forEach(node => {
+        node.classList.remove('active-node');
+        
+        const idPattern = new RegExp(`(^|-)${targetNodeId}(-|$)`);
+        if (idPattern.test(node.id)) {
+          node.classList.add('active-node');
+        }
+      });
+    }
+
+    function makeSvgResponsive(container) {
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      // Remove static width and height attributes so SVG fills container
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+    }
+
     async function renderFlowchart() {
       const container = document.getElementById('mermaidContainer');
-      const diagramText = getDiagramDefinition(currentDirection);
       const renderId = 'mermaid-svg-' + Math.floor(Math.random() * 10000);
       
       try {
+        const diagramText = getDiagramDefinition(currentLayout);
         const { svg } = await window.mermaid.render(renderId, diagramText);
         container.innerHTML = svg;
-        if (currentActiveNode) applyGlow(currentActiveNode);
+
+        makeSvgResponsive(container);
+        applyGlow(currentActiveNode);
+        requestAnimationFrame(() => {
+          applyGlow(currentActiveNode);
+        });
       } catch (err) {
         console.error('Mermaid render error:', err);
       }
     }
 
     function toggleLayout() {
-      currentDirection = currentDirection === 'LR' ? 'TB' : 'LR';
-      document.getElementById('layoutBadge').innerText = `LAYOUT: ${currentDirection}`;
-      document.getElementById('layoutDirText').innerText = currentDirection === 'LR' ? 'TB' : 'LR';
-      renderFlowchart();
-    }
-
-    function applyGlow(stateKey) {
-      const targetNodeId = stateMap[stateKey] || stateKey; // supports "DOSING_ACID" or "n8"
+      currentLayout = (currentLayout === 'LR') ? 'TB' : 'LR';
       
-      document.querySelectorAll('#mermaidContainer .node').forEach(node => {
-        node.classList.remove('active-node');
-        if (node.id.includes(`-${targetNodeId}-`)) {
-          node.classList.add('active-node');
-        }
-      });
+      document.getElementById('layoutBadge').innerText = `LAYOUT: ${currentLayout}`;
+      document.getElementById('layoutDirText').innerText = (currentLayout === 'LR') ? 'TB' : 'LR';
+      
+      renderFlowchart();
     }
 
     function setActiveState(stateKey) {
       currentActiveNode = stateKey;
-      document.getElementById('currentStateLabel').innerText = stateKey;
+      const label = document.getElementById('currentStateLabel');
+      if (label) label.innerText = stateKey;
       applyGlow(stateKey);
     }
 
@@ -348,19 +383,33 @@ flowchart ${direction}
     const mqttBadge = document.getElementById('mqttBadge');
 
     client.on('connect', () => {
-      mqttBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-      mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span> MQTT: LIVE';
+      if (mqttBadge) {
+        mqttBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span> MQTT: LIVE';
+      }
       client.subscribe(hivemqConfig.topic);
     });
 
     client.on('error', () => {
-      mqttBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20';
-      mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-red-400"></span> MQTT: ERROR';
+      if (mqttBadge) {
+        mqttBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20';
+        mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-red-400"></span> MQTT: ERROR';
+      }
     });
 
     client.on('message', (topic, message) => {
-      const stateKey = message.toString().trim(); // e.g. "DOSING_ACID" or "n8"
+      const stateKey = message.toString().trim();
       setActiveState(stateKey);
+    });
+
+    // Re-render chart and diagram on window resize to ensure crisp dynamic scaling
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const container = document.getElementById('mermaidContainer');
+        makeSvgResponsive(container);
+      }, 100);
     });
 
     // Initial Diagram Render
