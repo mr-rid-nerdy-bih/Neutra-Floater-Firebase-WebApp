@@ -76,21 +76,38 @@
   <div class="w-full flex-1 flex flex-col">
     <!-- Navigation Bar -->
     <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50">
-      <div class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 h-14 flex items-center justify-between">
+      <div class="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-12 h-auto sm:h-16 py-2 sm:py-0 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
         <div class="flex items-center gap-3">
           <div class="h-7 w-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 font-mono text-xs font-bold">
             NF
           </div>
           <span class="text-sm font-semibold tracking-tight text-slate-200">Neutra Floater</span>
-          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono hidden sm:inline-block">v1.4.0</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono hidden sm:inline-block">v1.7.0</span>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Command Controls & Connection Badges -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+          
+          <!-- Control Button: Permit Pump (Single Trigger Approval) -->
+          <button id="btnPermitPump" onclick="sendPumpPermit()" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono transition active:scale-95 disabled:opacity-50">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Approve / Permit Pump</span>
+          </button>
+
+          <!-- Control Button: Auto Pump Toggle -->
+          <button id="btnAutoPump" onclick="toggleAutoPump()" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono transition active:scale-95">
+            <span id="autoPumpDot" class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+            <span>Auto Pump: <strong id="autoPumpState">OFF</strong></span>
+          </button>
+
+          <div class="h-4 w-[1px] bg-slate-800 hidden md:block"></div>
+
           <!-- Firebase Badge -->
           <div id="firebaseBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-slate-800/80 text-slate-400 border border-slate-700/60">
             <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
             FB: SYNCING
           </div>
+
           <!-- HiveMQ Badge -->
           <div id="mqttBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-slate-800/80 text-slate-400 border border-slate-700/60">
             <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
@@ -135,10 +152,10 @@
         </div>
       </div>
 
-      <!-- Telemetry Cards & Charts -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Telemetry Cards & Charts & Pump Log Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <!-- Metric Card 1 -->
+        <!-- Metric Card 1: Water pH -->
         <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span class="text-slate-400 font-medium tracking-wide">WATER pH</span>
@@ -150,7 +167,7 @@
           <p id="phStatusText" class="text-[11px] text-slate-500 mt-2 sm:mt-3">Firestore live feed</p>
         </div>
 
-        <!-- Metric Card 2 -->
+        <!-- Metric Card 2: Est. Dissolved O2 -->
         <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between text-xs">
             <span class="text-slate-400 font-medium tracking-wide">EST. DISSOLVED O₂</span>
@@ -163,8 +180,22 @@
           <p id="doStatusText" class="text-[11px] text-slate-500 mt-2 sm:mt-3">Calculated via pH sensor</p>
         </div>
 
+        <!-- ROBOT INITIATED PUMP REQUEST CONTAINER -->
+        <div id="pumpReqCard" class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between transition-all duration-300">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium tracking-wide">INCOMING PUMP REQUEST</span>
+            <span id="reqBadge" class="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">NO REQUEST</span>
+          </div>
+          <div class="mt-3 sm:mt-4 flex flex-col space-y-1 font-mono">
+            <div class="text-xs text-slate-400">MODE: <span id="reqMode" class="text-teal-400 font-bold">MANUAL</span></div>
+            <div class="text-xs text-slate-400">STATUS: <span id="reqStatus" class="text-slate-200">IDLE</span></div>
+            <div class="text-[11px] text-slate-500 mt-1">TIME: <span id="reqTime" class="text-slate-400">--:--:--</span></div>
+          </div>
+          <p id="reqSourceText" class="text-[11px] text-slate-500 mt-2 sm:mt-3">Robot payload via MQTT / Firebase</p>
+        </div>
+
         <!-- Chart Card -->
-        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 sm:col-span-2 lg:col-span-1 flex flex-col justify-between">
+        <div class="bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <span class="h-2 w-2 rounded-full bg-teal-400"></span>
@@ -211,6 +242,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
     const fbBadge = document.getElementById('firebaseBadge');
 
     const ctxPH = document.getElementById('phChart').getContext('2d');
@@ -228,19 +260,37 @@
       }
     });
 
+    function formatTimeLabel(docData) {
+      if (!docData.timestamp) {
+        return docData.uptime_sec ? `${Math.floor(docData.uptime_sec / 60)}m` : '--';
+      }
+      
+      let dateObj;
+      if (typeof docData.timestamp.toDate === 'function') {
+        dateObj = docData.timestamp.toDate();
+      } else {
+        dateObj = new Date(docData.timestamp);
+      }
+
+      return isNaN(dateObj.getTime()) 
+        ? '--' 
+        : dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    }
+
     const telemetryRef = collection(db, "telemetry");
-    const q = query(telemetryRef, orderBy("uptime_sec", "desc"), limit(15));
+    const q = query(telemetryRef, orderBy("timestamp", "desc"), limit(15));
 
     onSnapshot(q, (snapshot) => {
       fbBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
       fbBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> FB: ONLINE';
 
       if (snapshot.empty) return;
+      
       const docs = snapshot.docs.map(doc => doc.data()).reverse();
       const latest = docs[docs.length - 1];
 
-      document.getElementById('valPH').innerText = latest.pH !== undefined ? latest.pH.toFixed(2) : '--';
-      document.getElementById('valDO').innerText = latest.est_dissolved_O2 !== undefined ? latest.est_dissolved_O2.toFixed(2) : '--';
+      document.getElementById('valPH').innerText = latest.pH !== undefined ? Number(latest.pH).toFixed(2) : '--';
+      document.getElementById('valDO').innerText = latest.est_dissolved_O2 !== undefined ? Number(latest.est_dissolved_O2).toFixed(2) : '--';
 
       const isPHOk = latest.pH >= 7.0 && latest.pH <= 7.6;
       const phBadge = document.getElementById('phBadge');
@@ -249,12 +299,22 @@
         ? 'text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
         : 'text-xs font-medium px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20';
 
-      phChart.data.labels = docs.map(d => `${Math.floor(d.uptime_sec / 60)}m`);
+      phChart.data.labels = docs.map(d => formatTimeLabel(d));
       phChart.data.datasets[0].data = docs.map(d => d.pH);
       phChart.update();
-    }, () => {
+    }, (err) => {
+      console.error("Firestore error:", err);
       fbBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-red-500/10 text-red-400 border border-red-500/20';
       fbBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-red-400"></span> FB: ERROR';
+    });
+
+    // Firestore listener for robot-initiated pump requests
+    const requestsRef = collection(db, "pump_requests");
+    const qReq = query(requestsRef, orderBy("timestamp", "desc"), limit(1));
+    onSnapshot(qReq, (snapshot) => {
+      if (snapshot.empty) return;
+      const lastReq = snapshot.docs[0].data();
+      updatePumpRequestUI(lastReq.mode || 'AUTO', lastReq.status || 'PENDING PERMIT', lastReq.timestamp ? formatTimeLabel(lastReq) : new Date().toLocaleTimeString());
     });
   </script>
 
@@ -262,6 +322,7 @@
   <script>
     let currentActiveNode = 'INIT';
     let currentLayout = 'LR';
+    let isAutoPumpEnabled = false;
 
     const stateMap = {
       'INIT': 'n1',
@@ -322,7 +383,6 @@ flowchart ${direction}
       const svg = container.querySelector('svg');
       if (!svg) return;
 
-      // Remove static width and height attributes so SVG fills container
       svg.removeAttribute('width');
       svg.removeAttribute('height');
       svg.style.width = '100%';
@@ -362,6 +422,42 @@ flowchart ${direction}
       const label = document.getElementById('currentStateLabel');
       if (label) label.innerText = stateKey;
       applyGlow(stateKey);
+
+      // Dynamically sync status card based on active state execution
+      if (stateKey === 'DOSING_ACID') {
+        updatePumpRequestUI(null, 'DOSING ACTIVE', null);
+      } else if (stateKey === 'PUMP_OFF') {
+        updatePumpRequestUI(null, 'CYCLE COMPLETED', null);
+      }
+    }
+
+    function updatePumpRequestUI(mode, status, time) {
+      const card = document.getElementById('pumpReqCard');
+      const reqBadge = document.getElementById('reqBadge');
+      const reqMode = document.getElementById('reqMode');
+      const reqStatus = document.getElementById('reqStatus');
+      const reqTime = document.getElementById('reqTime');
+
+      if (mode) reqMode.innerText = mode;
+      if (status) reqStatus.innerText = status;
+      if (time) reqTime.innerText = time;
+
+      if (status && status.includes('REQUESTED')) {
+        reqBadge.innerText = 'PENDING APPROVAL';
+        reqBadge.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse';
+        card.className = 'bg-amber-950/20 rounded-xl border border-amber-500/40 p-4 sm:p-5 flex flex-col justify-between transition-all duration-300';
+      } else if (status && status.includes('APPROVED')) {
+        reqBadge.innerText = 'APPROVED';
+        reqBadge.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        card.className = 'bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between transition-all duration-300';
+      } else if (status && status.includes('DOSING')) {
+        reqBadge.innerText = 'PUMP RUNNING';
+        reqBadge.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-teal-500/20 text-teal-300 border border-teal-500/40 animate-pulse';
+      } else {
+        reqBadge.innerText = 'IDLE';
+        reqBadge.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400';
+        card.className = 'bg-slate-900/50 rounded-xl border border-slate-800 p-4 sm:p-5 flex flex-col justify-between transition-all duration-300';
+      }
     }
 
     // --- HIVEMQ INTEGRATION ---
@@ -371,7 +467,12 @@ flowchart ${direction}
       path: "/mqtt",
       username: "robot1",
       password: "neutrafloatersmkseksyen7",
-      topic: "neutrafloater/state"
+      topics: {
+        state: "neutrafloater/state",
+        pumpPermitCmd: "neutrafloater/cmd/pump_permit",
+        autoPumpCmd: "neutrafloater/cmd/auto_pump",
+        robotPumpReq: "neutrafloater/request/pump"
+      }
     };
 
     const client = mqtt.connect(`wss://${hivemqConfig.host}:${hivemqConfig.port}${hivemqConfig.path}`, {
@@ -387,7 +488,8 @@ flowchart ${direction}
         mqttBadge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
         mqttBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span> MQTT: LIVE';
       }
-      client.subscribe(hivemqConfig.topic);
+      client.subscribe(hivemqConfig.topics.state);
+      client.subscribe(hivemqConfig.topics.robotPumpReq);
     });
 
     client.on('error', () => {
@@ -398,9 +500,64 @@ flowchart ${direction}
     });
 
     client.on('message', (topic, message) => {
-      const stateKey = message.toString().trim();
-      setActiveState(stateKey);
+      const msgStr = message.toString().trim();
+
+      if (topic === hivemqConfig.topics.state) {
+        setActiveState(msgStr);
+      } else if (topic === hivemqConfig.topics.robotPumpReq) {
+        // Robot emits request string or JSON payload
+        try {
+          const payload = JSON.parse(msgStr);
+          updatePumpRequestUI(payload.mode || (isAutoPumpEnabled ? 'AUTO' : 'MANUAL'), payload.status || 'REQUESTED', payload.time || new Date().toLocaleTimeString());
+        } catch(e) {
+          updatePumpRequestUI(isAutoPumpEnabled ? 'AUTO' : 'MANUAL', `REQUESTED (${msgStr})`, new Date().toLocaleTimeString());
+        }
+      }
     });
+
+    // --- COMMAND ISSUING FUNCTIONS ---
+    function sendPumpPermit() {
+      if (!client || !client.connected) {
+        alert("Cannot send command: MQTT Disconnected");
+        return;
+      }
+
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+      // Publish permission trigger to HiveMQ for the robot
+      client.publish(hivemqConfig.topics.pumpPermitCmd, "PERMIT_PUMP");
+      updatePumpRequestUI(null, 'APPROVED & PERMITTED', nowStr);
+
+      const btn = document.getElementById('btnPermitPump');
+      btn.classList.add('ring-2', 'ring-amber-400');
+      setTimeout(() => btn.classList.remove('ring-2', 'ring-amber-400'), 500);
+    }
+
+    function toggleAutoPump() {
+      if (!client || !client.connected) {
+        alert("Cannot send command: MQTT Disconnected");
+        return;
+      }
+      
+      isAutoPumpEnabled = !isAutoPumpEnabled;
+      const payloadCmd = isAutoPumpEnabled ? "ENABLE_AUTO_PUMP" : "DISABLE_AUTO_PUMP";
+      
+      client.publish(hivemqConfig.topics.autoPumpCmd, payloadCmd);
+
+      const btn = document.getElementById('btnAutoPump');
+      const dot = document.getElementById('autoPumpDot');
+      const stateLabel = document.getElementById('autoPumpState');
+      
+      if (isAutoPumpEnabled) {
+        btn.className = 'flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono transition active:scale-95';
+        dot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse';
+        stateLabel.innerText = 'ACTIVE';
+      } else {
+        btn.className = 'flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-mono transition active:scale-95';
+        dot.className = 'h-1.5 w-1.5 rounded-full bg-slate-500';
+        stateLabel.innerText = 'OFF';
+      }
+    }
 
     // Re-render chart and diagram on window resize to ensure crisp dynamic scaling
     let resizeTimer;
